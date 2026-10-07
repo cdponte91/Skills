@@ -22,7 +22,7 @@ El `.htm` tiene un `data-modo` en `<html>`:
 
 ## Receta
 
-1. **Repo** `cdponte91/<Nombre>`, `main`. Un solo commit: título "Dashboard <X> — <Zonal>", cuerpo con decisiones de parseo + cifras de regresión + tests, y la línea Co-Authored-By vigente.
+1. **Repo** `cdponte91/<Nombre>`, `main`. Se pushea solo al terminar (ver "Cierre"). Un solo commit: título "Dashboard <X> — <Zonal>", cuerpo con decisiones de parseo + cifras de regresión + tests, y la línea Co-Authored-By vigente.
 2. **Carpeta**: `template.html`, `build.py` (python3.11), `extract.js`, `bake.js`, `libs/chart.umd.min.js`, `libs/xlsx.full.min.js`, Excel fuente, `<Nombre>_Dashboard.htm`, `test_parser.js`, `test_build.js`, `README.md`, `.gitignore` (`.DS_Store __pycache__/ *.pyc .data.json ~$*.xlsx`).
 3. **Parser solo en JS dentro del template** entre marcadores `PARSER — INICIO/FIN`. `extract.js` lo corta, `bake.js` lo corre en Node con SheetJS. `build.py` inyecta libs (`safe_js`) y datos en `/*__DATA__*/null/*__END_DATA__*/`, aborta si falta un marcador, imprime cifras. **Nunca** duplicar el parser en Python.
 4. **Salida `.htm`**, un archivo, **sin CDN**, todo inline, offline en Outlook/webmail. `build.py` sin argumentos → herramienta vacía (pantalla inicial). Con `--hornear <archivo>` → copia en modo lectura con ese Excel (para tests y envío directo).
@@ -30,6 +30,17 @@ El `.htm` tiene un `data-modo` en `<html>`:
 6. **Contenido**: KPIs 5-8 · filtros `<select>` nativos + `input[type=search]` + "Limpiar filtros" (nunca combobox custom) · tabs con emoji · Chart.js con `mkChart` y **redibujo al mostrar la pestaña** · tabla ordenable `th[data-k]` ▲▼, 50 por página, `tfoot` TOTAL sticky · formatos `es-AR`.
 7. **Labels**: nombres completos ("Zonal Córdoba Norte"), códigos solo en columnas "Cód". Sucursales conocidas ausentes → fila con ceros. Gerencia Zonal = una unidad consolidada; nunca los Equipos como filtro.
 8. **Imprimir/PDF**: `@media print` A4 apaisado (oculta toolbar, filtros, paginadores; muestra todas las filas del resumen), `window.print()`; el PDF sale de "Guardar como PDF". Charts con `animation:false` y redibujo en `beforeprint`.
+
+## Cierre: commit y push automáticos
+
+Cuando el tablero está terminado y verificado (tests en verde, capturas de ambos estados revisadas, README escrito), **hacer commit y push a `origin/main` sin esperar a que Carli lo pida**. Está autorizado de forma permanente para los repos de tableros `cdponte91/<Nombre>`.
+
+1. Si la carpeta no es un repo: `git init -b main`, `gh repo create cdponte91/<Nombre> --private --source=. --push` (privado por defecto).
+2. Si ya es un repo: `git add` de los archivos del tablero (nunca `.data.json`, `~$*.xlsx` ni `.DS_Store`; respetar `.gitignore`), un solo commit, `git push origin main`.
+3. Commit único: título "Dashboard <X> — <Zonal>", cuerpo con decisiones de parseo, cifras de regresión y tests, más la línea Co-Authored-By vigente.
+4. Informar a Carli el link del repo y el hash del commit, junto con las cifras de control.
+
+Alcance de la autorización: solo crear/pushear el tablero recién terminado. **No** hacer force-push, no tocar otras ramas ni otros repos, y si el push falla (credenciales, rama protegida, conflicto) frenar y avisar en vez de improvisar. Si los tests no están en verde, no se pushea: se informa el rojo.
 
 ## Piezas opcionales (solo si aplican)
 
