@@ -5,7 +5,7 @@ description: Use when Carli pide un dashboard, tablero o informe web a partir de
 
 # Dashboard — tablero HTM autocontenido desde Excel/TXT
 
-Es **rutina, no proyecto**: sin spec, sin plan de superpowers, sin `.claude/agents/`, sin branches ni PRs. Un agente opus construye con esta receta, yo verifico con cifras y hago **un** commit. Código y patrones listos para copiar: `patrones.md` (mismo directorio). Referencia viva: `~/Downloads/Desarrollo/813/`; modal: `Pellegrini/`; print/selftest: `PersonalRelevado/`.
+Es **rutina, no proyecto**: sin spec, sin plan de superpowers, sin `.claude/agents/`, sin branches ni PRs. Un agente opus construye con esta receta, yo verifico con cifras y hago **un** commit. Código y patrones listos para copiar: `patrones.md`; librerías en `libs/` (Chart.js y SheetJS, copiar a la carpeta del tablero nuevo); tabla de sucursales en `sucursales.js`; ZIP en `zip.js`. En un repo nuevo sin esas carpetas (p. ej. sesión en la nube), tomarlas de `cdponte91/Skills/dashboard/`. Referencia viva: `~/Downloads/Desarrollo/813/`; modal: `Pellegrini/`; print/selftest: `PersonalRelevado/`.
 
 ## Regla de oro: dos estados, no tres
 
