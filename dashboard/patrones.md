@@ -37,7 +37,9 @@ html[data-modo="lectura"] #inicio{display:none!important}
   <div id="tools">
     <button class="btn pri solo-datos" id="bPdf">🖨️ Imprimir / PDF</button>
     <button class="btn solo-datos solo-carga" id="bXls">📊 Exportar Excel</button>
+    <select id="fAmbito" class="solo-datos solo-carga"></select>
     <button class="btn solo-datos solo-carga" id="bHtm">💾 Exportar HTM</button>
+    <button class="btn solo-datos solo-carga" id="bSuc">📦 Exportar por sucursal</button>
     <button class="btn solo-datos solo-carga" id="bCambiar">📁 Cambiar archivos</button>
   </div>
 </header>
@@ -126,27 +128,37 @@ function boot(){
 
 ## 4. Exportar HTM (modo lectura, final)
 
+`htmLectura(datos, ambito, titulo)` arma el string de un `.htm` final; lo usan tanto "Exportar HTM" como "por sucursal".
+
 ```js
-function exportHtm(){
-  var html = PRISTINE, faltan = [];
-  function bake(src, key, value){
-    var re = new RegExp("\\/\\*__"+key+"__\\*\\/[\\s\\S]*?\\/\\*__END_"+key+"__\\*\\/");
-    if(!re.test(src)){ faltan.push(key); return src; }
-    var json = JSON.stringify(value).replace(/<\/script/gi,"<\\/script").replace(/<!--/g,"<\\!--");
-    return src.replace(re, function(){ return "/*__"+key+"__*/"+json+"/*__END_"+key+"__*/"; });
-  }
-  html = bake(html, "DATA", DATA);
-  if(faltan.length){ msg("❌ Faltan marcadores: "+faltan.join(", "), "bad"); return; }
-  // lectura: sin importador ni exportadores
-  html = html.replace('data-modo="carga"', 'data-modo="lectura"')
-             .replace('data-estado="inicio"', 'data-estado="datos"')
-             .replace(/<section id="inicio"[\s\S]*?<\/section>/, "");
+function bakeKey(src, key, value, faltan){
+  var re = new RegExp("\\/\\*__"+key+"__\\*\\/[\\s\\S]*?\\/\\*__END_"+key+"__\\*\\/");
+  if(!re.test(src)){ faltan.push(key); return src; }
+  var json = JSON.stringify(value).replace(/<\/script/gi,"<\\/script").replace(/<!--/g,"<\\!--");
+  return src.replace(re, function(){ return "/*__"+key+"__*/"+json+"/*__END_"+key+"__*/"; });
+}
+function htmLectura(datos, ambito, titulo){
+  var faltan = [], html = PRISTINE;
+  html = bakeKey(html, "DATA", datos, faltan);
+  html = bakeKey(html, "AMBITO", ambito, faltan);     // {id:"norte"} o {id:"suc", cod:1046}
+  if(faltan.length) throw new Error("Faltan marcadores: "+faltan.join(", "));
+  return "<!DOCTYPE html>\n" + html
+    .replace('data-modo="carga"', 'data-modo="lectura"')
+    .replace('data-estado="inicio"', 'data-estado="datos"')
+    .replace(/<section id="inicio"[\s\S]*?<\/section>/, "")
+    .replace(/<title>[\s\S]*?<\/title>/, "<title>"+titulo+"</title>");
+}
+function descargar(blob, nombre){
   var a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["<!DOCTYPE html>\n"+html], {type:"text/html;charset=utf-8"}));
-  a.download = "<Nombre>_Dashboard_"+new Date().toISOString().slice(0,10)+".htm";
+  a.href = URL.createObjectURL(blob); a.download = nombre;
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-  msg("💾 HTM de consulta generado: lleva los datos embebidos; solo permite imprimir o guardar PDF.", "ok");
+}
+function exportHtm(){
+  var amb = AMB_ACTUAL;                                   // "zonal" | "norte" | "este"
+  var datos = filtrarPorAmbito(DATA, amb);
+  descargar(new Blob([htmLectura(datos, {id:amb}, TITULO+" — "+nombreAmbito(amb))], {type:"text/html;charset=utf-8"}),
+            "<Nombre>_"+amb+"_"+hoy()+".htm");
 }
 ```
 
@@ -177,3 +189,50 @@ assert(c.includes('data-modo="lectura"') && !c.includes('id="inicio"'));
 assert(!/\/\*__DATA__\*\/null/.test(c));                 // datos embebidos
 // el exportado desde el navegador debe pasar los mismos asserts (roundtrip con jsdom/headless)
 ```
+
+## 7. Ámbito (33 / 23 / 10)
+
+Pegar `sucursales.js` en el template (junto al parser). Cada fila de datos debe tener `cod` de sucursal.
+
+```js
+var AMB_ACTUAL = "zonal";
+function nombreAmbito(id){ return AMBITOS.filter(function(a){return a.id===id})[0].nombre; }
+function codsDe(id){ return sucursalesDe(id).map(function(s){ return s.cod; }); }
+function filtrarPorAmbito(datos, id){
+  var ok = {}; codsDe(id).forEach(function(c){ ok[c] = 1; });
+  return recortar(datos, function(cod){ return ok[cod]; });
+}
+function filtrarPorSucursal(datos, cod){ return recortar(datos, function(c){ return c === cod; }); }
+/* recortar(): específico de cada tablero — devuelve el MISMO formato de DATA con solo las filas
+   cuyo cod cumple, recalculando totales/meta. Es la única función que cambia entre tableros. */
+
+$("#fAmbito").innerHTML = AMBITOS.map(function(a){ return '<option value="'+a.id+'">'+a.nombre+'</option>'; }).join("");
+$("#fAmbito").onchange = function(){ AMB_ACTUAL = this.value; render(); };
+```
+
+Modo lectura de un ámbito o de una sucursal: en `boot()`, si `AMBITO` está embebido, fijarlo y ocultar `#fAmbito` y el filtro de sucursal cuando `AMBITO.id === "suc"`:
+
+```js
+var AMBITO = /*__AMBITO__*/null/*__END_AMBITO__*/;   // junto a DATA
+if(AMBITO){ AMB_ACTUAL = AMBITO.id === "suc" ? "zonal" : AMBITO.id; }
+```
+
+## 8. Exportar por sucursal (ZIP)
+
+Pegar `zip.js` (esta carpeta) en el template.
+
+```js
+function exportPorSucursal(){
+  var amb = AMB_ACTUAL, enc = new TextEncoder(), archivos = [];
+  sucursalesDe(amb).forEach(function(s){
+    var datos = filtrarPorSucursal(DATA, s.cod);         // sucursal sin filas -> igual se genera, con ceros
+    var html = htmLectura(datos, {id:"suc", cod:s.cod}, TITULO+" — "+s.nombre);
+    archivos.push({name:"<Nombre>_"+s.cod+"_"+s.nombre.replace(/[\\/:*?"<>|]/g,"")+".htm", data:enc.encode(html)});
+  });
+  descargar(zipBlob(archivos), "<Nombre>_"+amb+"_por_sucursal_"+hoy()+".zip");
+  msg("📦 "+archivos.length+" archivos (uno por sucursal de "+nombreAmbito(amb)+") en un ZIP.", "ok");
+}
+$("#bSuc").onclick = exportPorSucursal;
+```
+
+Test (en `test_parser.js`): para cada ámbito, `sum(filas de filtrarPorSucursal(cod))` sobre las sucursales del ámbito == `filas de filtrarPorAmbito(id)`, y lo mismo para los importes; 33 = 23 + 10.
