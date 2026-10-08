@@ -69,6 +69,8 @@ Cuando el tablero está terminado y verificado (tests en verde, capturas de ambo
 
 Alcance de la autorización: solo crear/pushear el tablero recién terminado. **No** hacer force-push, no tocar otras ramas ni otros repos, y si el push falla (credenciales, rama protegida, conflicto) frenar y avisar en vez de improvisar. Si los tests no están en verde, no se pushea: se informa el rojo.
 
+**Esta skill también se sincroniza sola:** cada vez que se modifique `~/.claude/skills/dashboard/`, copiarla a `~/Downloads/Desarrollo/Skills/dashboard/`, commit y `git push origin main` en el repo `cdponte91/Skills`, sin esperar a que Carli lo pida.
+
 ## Piezas opcionales (solo si aplican)
 
 - **Modal por cliente** (`tr.clickable` → `#modal`) cuando la fila tiene un veredicto que explicar.
